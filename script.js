@@ -119,13 +119,94 @@ function getDaysUntilNext(day, month) {
     return diffDays;
 }
 
+// Detect Apple devices (iOS / macOS) for .ics vs Google Calendar
+const isAppleDevice = /Macintosh|iPhone|iPad|iPod/.test(navigator.userAgent);
+
+const pad = n => String(n).padStart(2, '0');
+
+// Generate .ics file content for a single birthday
+function generateICS(name, day, month) {
+    const year = new Date().getFullYear();
+    const startDate = `${year}${pad(month)}${pad(day)}`;
+    const endDateObj = new Date(year, month - 1, day + 1);
+    const endDate = `${endDateObj.getFullYear()}${pad(endDateObj.getMonth() + 1)}${pad(endDateObj.getDate())}`;
+    const uid = `birthday-${name.replace(/\s+/g, '-').toLowerCase()}-${month}-${day}@birthday-dashboard`;
+
+    return [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Birthday Dashboard//EN',
+        'CALSCALE:GREGORIAN',
+        'BEGIN:VEVENT',
+        `DTSTART;VALUE=DATE:${startDate}`,
+        `DTEND;VALUE=DATE:${endDate}`,
+        'RRULE:FREQ=YEARLY',
+        `SUMMARY:🎂 ${name}'s Birthday`,
+        `DESCRIPTION:Happy Birthday ${name}! 🎉`,
+        `UID:${uid}`,
+        'BEGIN:VALARM',
+        'TRIGGER:-PT0M',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:🎂 ${name}'s Birthday is today!`,
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR'
+    ].join('\r\n');
+}
+
+// Generate a combined .ics with multiple events
+function generateMultiICS(people) {
+    const events = people.map(p => {
+        const year = new Date().getFullYear();
+        const startDate = `${year}${pad(p.month)}${pad(p.day)}`;
+        const endDateObj = new Date(year, p.month - 1, p.day + 1);
+        const endDate = `${endDateObj.getFullYear()}${pad(endDateObj.getMonth() + 1)}${pad(endDateObj.getDate())}`;
+        const uid = `birthday-${p.name.replace(/\s+/g, '-').toLowerCase()}-${p.month}-${p.day}@birthday-dashboard`;
+
+        return [
+            'BEGIN:VEVENT',
+            `DTSTART;VALUE=DATE:${startDate}`,
+            `DTEND;VALUE=DATE:${endDate}`,
+            'RRULE:FREQ=YEARLY',
+            `SUMMARY:🎂 ${p.name}'s Birthday`,
+            `DESCRIPTION:Happy Birthday ${p.name}! 🎉`,
+            `UID:${uid}`,
+            'BEGIN:VALARM',
+            'TRIGGER:-PT0M',
+            'ACTION:DISPLAY',
+            `DESCRIPTION:🎂 ${p.name}'s Birthday is today!`,
+            'END:VALARM',
+            'END:VEVENT'
+        ].join('\r\n');
+    });
+
+    return [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Birthday Dashboard//EN',
+        'CALSCALE:GREGORIAN',
+        ...events,
+        'END:VCALENDAR'
+    ].join('\r\n');
+}
+
+// Download an .ics file
+function downloadICS(filename, icsContent) {
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
 // Generate Google Calendar URL for a birthday
 function getGoogleCalendarUrl(name, day, month) {
     const year = new Date().getFullYear();
-    const pad = n => String(n).padStart(2, '0');
     const startDate = `${year}${pad(month)}${pad(day)}`;
-    
-    // Next day for all-day event end
     const endDateObj = new Date(year, month - 1, day + 1);
     const endDate = `${endDateObj.getFullYear()}${pad(endDateObj.getMonth() + 1)}${pad(endDateObj.getDate())}`;
     
@@ -136,13 +217,27 @@ function getGoogleCalendarUrl(name, day, month) {
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&recur=${recur}`;
 }
 
-// Generate Google Calendar URL for multiple birthdays (opens first, others alert)
+// Unified: add a single person to calendar
+function addToCalendar(name, day, month) {
+    if (isAppleDevice) {
+        const ics = generateICS(name, day, month);
+        downloadICS(`${name.replace(/\s+/g, '_')}_birthday.ics`, ics);
+    } else {
+        window.open(getGoogleCalendarUrl(name, day, month), '_blank');
+    }
+}
+
+// Unified: add all birthdays in a month to calendar
 function addAllToCalendar(monthBirthdays) {
-    monthBirthdays.forEach((person, i) => {
-        const url = getGoogleCalendarUrl(person.name, person.day, person.month);
-        // Stagger window opens slightly to avoid popup blockers
-        setTimeout(() => window.open(url, '_blank'), i * 300);
-    });
+    if (isAppleDevice) {
+        const ics = generateMultiICS(monthBirthdays);
+        const monthName = monthNames[monthBirthdays[0].month - 1];
+        downloadICS(`${monthName}_birthdays.ics`, ics);
+    } else {
+        monthBirthdays.forEach((person, i) => {
+            setTimeout(() => window.open(getGoogleCalendarUrl(person.name, person.day, person.month), '_blank'), i * 300);
+        });
+    }
 }
 
 // Find today's birthdays
@@ -264,15 +359,17 @@ function renderMonths() {
             
             li.className = `birthday-item${isToday ? ' birthday-today' : ''}`;
             
-            const calUrl = getGoogleCalendarUrl(person.name, person.day, person.month);
-            
             li.innerHTML = `
                 <span class="name">${isToday ? '🎂 ' : ''}${person.name}</span>
                 <span class="item-actions">
-                    <a href="${calUrl}" target="_blank" rel="noopener" class="cal-btn" title="Add ${person.name}'s birthday to Google Calendar">📅</a>
+                    <button class="cal-btn" title="Add ${person.name}'s birthday to calendar">📅</button>
                     <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : ''}</span>
                 </span>
             `;
+            li.querySelector('.cal-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                addToCalendar(person.name, person.day, person.month);
+            });
             
             list.appendChild(li);
         });
