@@ -119,6 +119,32 @@ function getDaysUntilNext(day, month) {
     return diffDays;
 }
 
+// Generate Google Calendar URL for a birthday
+function getGoogleCalendarUrl(name, day, month) {
+    const year = new Date().getFullYear();
+    const pad = n => String(n).padStart(2, '0');
+    const startDate = `${year}${pad(month)}${pad(day)}`;
+    
+    // Next day for all-day event end
+    const endDateObj = new Date(year, month - 1, day + 1);
+    const endDate = `${endDateObj.getFullYear()}${pad(endDateObj.getMonth() + 1)}${pad(endDateObj.getDate())}`;
+    
+    const title = encodeURIComponent(`🎂 ${name}'s Birthday`);
+    const details = encodeURIComponent(`Happy Birthday ${name}! 🎉`);
+    const recur = encodeURIComponent('RRULE:FREQ=YEARLY');
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&recur=${recur}`;
+}
+
+// Generate Google Calendar URL for multiple birthdays (opens first, others alert)
+function addAllToCalendar(monthBirthdays) {
+    monthBirthdays.forEach((person, i) => {
+        const url = getGoogleCalendarUrl(person.name, person.day, person.month);
+        // Stagger window opens slightly to avoid popup blockers
+        setTimeout(() => window.open(url, '_blank'), i * 300);
+    });
+}
+
 // Find today's birthdays
 function getTodayBirthdays() {
     const today = new Date();
@@ -215,8 +241,15 @@ function renderMonths() {
         header.className = 'month-header';
         header.innerHTML = `
             <h3>${monthNames[month - 1]}</h3>
-            <span class="count">${monthBirthdays.length}</span>
+            <div class="month-header-actions">
+                <button class="add-all-btn" data-month="${month}" title="Add all ${monthNames[month - 1]} birthdays to Google Calendar">📅 Add All</button>
+                <span class="count">${monthBirthdays.length}</span>
+            </div>
         `;
+        // Bind the "Add All" button
+        header.querySelector('.add-all-btn').addEventListener('click', () => {
+            addAllToCalendar(monthBirthdays);
+        });
         card.appendChild(header);
         
         const list = document.createElement('ul');
@@ -231,9 +264,14 @@ function renderMonths() {
             
             li.className = `birthday-item${isToday ? ' birthday-today' : ''}`;
             
+            const calUrl = getGoogleCalendarUrl(person.name, person.day, person.month);
+            
             li.innerHTML = `
                 <span class="name">${isToday ? '🎂 ' : ''}${person.name}</span>
-                <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : ''}</span>
+                <span class="item-actions">
+                    <a href="${calUrl}" target="_blank" rel="noopener" class="cal-btn" title="Add ${person.name}'s birthday to Google Calendar">📅</a>
+                    <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : ''}</span>
+                </span>
             `;
             
             list.appendChild(li);
