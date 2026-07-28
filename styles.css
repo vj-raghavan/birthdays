@@ -1,0 +1,400 @@
+:root {
+    --bg-base: #111114;
+    --bg-surface: #1a1a1f;
+    --bg-elevated: #222228;
+
+    --text-primary: #eaeaef;
+    --text-secondary: #9090a0;
+    --text-tertiary: #606070;
+
+    --accent-warm: #c8956c;
+    --accent-warm-muted: rgba(200, 149, 108, 0.15);
+    --accent-gold: #bfa67a;
+    --accent-rose: #b87878;
+
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-hover: rgba(255, 255, 255, 0.12);
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2);
+    --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.4), 0 12px 32px rgba(0,0,0,0.3);
+
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle ambient background — warm and understated */
+.background-gradients {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    background: var(--bg-base);
+}
+
+.gradient-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.2;
+    animation: drift 30s infinite ease-in-out alternate;
+}
+
+.shape-1 {
+    top: -15%;
+    left: -5%;
+    width: 45vw;
+    height: 45vw;
+    background: radial-gradient(var(--accent-warm), transparent 70%);
+}
+
+.shape-2 {
+    bottom: -20%;
+    right: -5%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(var(--accent-rose), transparent 70%);
+    animation-delay: -10s;
+}
+
+.shape-3 {
+    top: 40%;
+    left: 50%;
+    width: 35vw;
+    height: 35vw;
+    background: radial-gradient(var(--accent-gold), transparent 70%);
+    animation-delay: -20s;
+}
+
+@keyframes drift {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(3%, 5%) scale(1.05); }
+}
+
+/* Layout */
+.app-container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 5rem 2rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+}
+
+/* Header */
+header {
+    text-align: center;
+    animation: fade-in 0.8s ease-out;
+}
+
+header h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+header p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+}
+
+/* Section headings */
+section h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* Cards */
+.glass-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--border-hover);
+}
+
+/* Upcoming Section */
+.upcoming-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.upcoming-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.upcoming-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(to right, var(--accent-warm), var(--accent-gold));
+    opacity: 0.8;
+}
+
+.upcoming-card .date-badge {
+    position: absolute;
+    top: 1.2rem;
+    right: 1.2rem;
+    background: var(--accent-warm-muted);
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-warm);
+    letter-spacing: 0.02em;
+}
+
+.upcoming-card h3 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    margin-top: 0.8rem;
+    color: var(--text-primary);
+    text-transform: capitalize;
+}
+
+.upcoming-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 300;
+}
+
+/* Month Grid */
+.months-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.month-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.month-header h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.month-header .count {
+    background: var(--accent-warm-muted);
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent-warm);
+}
+
+/* Birthday List Items */
+.birthday-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.birthday-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0.85rem;
+    background: transparent;
+    border-radius: var(--radius-md);
+    transition: background 0.2s ease;
+}
+
+.birthday-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.birthday-item .name {
+    font-weight: 400;
+    font-size: 0.95rem;
+    text-transform: capitalize;
+}
+
+.birthday-item .date {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== Today's Birthday Highlights ===== */
+
+/* Full-width banner at top of upcoming section */
+.today-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(135deg, rgba(200, 149, 108, 0.12), rgba(184, 120, 120, 0.08));
+    border: 1px solid rgba(200, 149, 108, 0.25);
+    border-left: 4px solid var(--accent-warm);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 40px rgba(200, 149, 108, 0.08);
+}
+
+.today-banner-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.today-banner-content h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent-warm);
+    margin-bottom: 0.2rem;
+    letter-spacing: -0.01em;
+}
+
+.today-banner-content p {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+}
+
+.today-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+/* Upcoming card — today variant */
+.upcoming-card.today-highlight {
+    background: linear-gradient(135deg, rgba(200, 149, 108, 0.1), var(--bg-surface));
+    border-color: rgba(200, 149, 108, 0.3);
+}
+
+.upcoming-card.today-highlight::before {
+    height: 4px;
+    opacity: 1;
+    background: linear-gradient(to right, var(--accent-warm), var(--accent-rose));
+}
+
+.upcoming-card .badge-today {
+    background: rgba(200, 149, 108, 0.25);
+    color: var(--accent-warm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+/* Birthday list row — today variant */
+.birthday-item.birthday-today {
+    background: linear-gradient(135deg, rgba(200, 149, 108, 0.1), rgba(184, 120, 120, 0.06));
+    border: 1px solid rgba(200, 149, 108, 0.2);
+    padding: 0.75rem 1rem;
+}
+
+.birthday-item.birthday-today .name {
+    font-weight: 600;
+    color: var(--accent-warm);
+}
+
+.birthday-item.birthday-today .date {
+    color: var(--accent-warm);
+    font-weight: 500;
+}
+
+/* Animations */
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gradient-blob { animation: none; }
+    .fade-in-up { animation: none; opacity: 1; }
+    header { animation: none; }
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    font-weight: 300;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .app-container { padding: 3rem 1.25rem 2rem; gap: 3rem; }
+    header h1 { font-size: 2rem; }
+    section h2 { font-size: 1.1rem; }
+    .months-grid { grid-template-columns: 1fr; }
+    .upcoming-grid { grid-template-columns: 1fr; }
+}
