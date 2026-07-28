@@ -227,17 +227,11 @@ function addToCalendar(name, day, month) {
     }
 }
 
-// Unified: add all birthdays in a month to calendar
+// Add all birthdays in a month — always use .ics (works everywhere, avoids popup blockers)
 function addAllToCalendar(monthBirthdays) {
-    if (isAppleDevice) {
-        const ics = generateMultiICS(monthBirthdays);
-        const monthName = monthNames[monthBirthdays[0].month - 1];
-        downloadICS(`${monthName}_birthdays.ics`, ics);
-    } else {
-        monthBirthdays.forEach((person, i) => {
-            setTimeout(() => window.open(getGoogleCalendarUrl(person.name, person.day, person.month), '_blank'), i * 300);
-        });
-    }
+    const ics = generateMultiICS(monthBirthdays);
+    const monthName = monthNames[monthBirthdays[0].month - 1];
+    downloadICS(`${monthName}_birthdays.ics`, ics);
 }
 
 // Find today's birthdays
