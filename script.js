@@ -31,7 +31,7 @@ const birthdays = [
     { name: "Lokesh", day: 22, month: 6 },
     { name: "Usha Kiruthika", day: 23, month: 6 },
     
-    { name: "shalini vikram", day: 1, month: 7 },
+    { name: "Shalini Vikram", day: 1, month: 7 },
     { name: "Divya", day: 10, month: 7 },
     { name: "Abinesh Raja", day: 17, month: 7 },
     { name: "Narendran", day: 18, month: 7 },
@@ -62,13 +62,13 @@ const birthdays = [
     { name: "Priyadharshini", day: 31, month: 10 },
     
     { name: "Antony Praveen", day: 7, month: 11 },
-    { name: "Pavithra dinesh", day: 13, month: 11 },
+    { name: "Pavithra Dinesh", day: 13, month: 11 },
     { name: "Anadavalli", day: 13, month: 11 },
     { name: "M.Vinoth", day: 13, month: 11 },
-    { name: "Sathya", day: 14, month: 11 },
+    { name: "Sathyaraj", day: 14, month: 11 },
     { name: "Sowmya", day: 16, month: 11 },
-    { name: "chitra", day: 19, month: 11 },
-    { name: "Vijaya ragavan", day: 26, month: 11 },
+    { name: "Chitra", day: 19, month: 11 },
+    { name: "Vijayaraghavan", day: 26, month: 11 },
     
     { name: "Hari", day: 10, month: 12 },
     { name: "Govardhani", day: 18, month: 12 },
