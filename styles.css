@@ -186,19 +186,91 @@ section h2 {
     letter-spacing: 0.02em;
 }
 
-.upcoming-card h3 {
+.upcoming-person {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding-right: 5.5rem;
+}
+
+.upcoming-person-text h3 {
     font-size: 1.35rem;
     font-weight: 600;
-    margin-bottom: 0.35rem;
-    margin-top: 0.8rem;
+    margin-bottom: 0.2rem;
+    margin-top: 0;
     color: var(--text-primary);
     text-transform: capitalize;
 }
 
-.upcoming-card p {
+.upcoming-person-text p {
     color: var(--text-secondary);
     font-size: 0.95rem;
     font-weight: 300;
+}
+
+/* Avatars — photo overlays initials; missing photos fall back to initials */
+.avatar {
+    position: relative;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    overflow: hidden;
+    background: hsl(var(--avatar-hue, 30) 42% 38%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.avatar-sm {
+    width: 1.85rem;
+    height: 1.85rem;
+}
+
+.avatar-lg {
+    width: 3.25rem;
+    height: 3.25rem;
+}
+
+.avatar-initials {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    user-select: none;
+}
+
+.avatar-sm .avatar-initials {
+    font-size: 0.62rem;
+}
+
+.avatar-lg .avatar-initials {
+    font-size: 0.95rem;
+}
+
+.avatar-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.birthday-person {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.birthday-person .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Month Grid */
@@ -355,6 +427,20 @@ section h2 {
     box-shadow: 0 0 40px rgba(200, 149, 108, 0.08);
 }
 
+.today-banner-avatars {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.today-banner-avatars .avatar {
+    box-shadow: 0 0 0 2px var(--bg-surface), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.today-banner-avatars .avatar + .avatar {
+    margin-left: -0.65rem;
+}
+
 .today-banner-icon {
     font-size: 2.5rem;
     line-height: 1;
@@ -462,4 +548,6 @@ footer {
     section h2 { font-size: 1.1rem; }
     .months-grid { grid-template-columns: 1fr; }
     .upcoming-grid { grid-template-columns: 1fr; }
+    .upcoming-person { padding-right: 5rem; }
+    .today-banner { padding: 1.25rem 1.25rem; gap: 1rem; }
 }
