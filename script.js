@@ -119,13 +119,10 @@ function getDaysUntilNext(day, month) {
     return diffDays;
 }
 
-// Detect Apple devices (iOS / macOS) for .ics vs Google Calendar
-const isAppleDevice = /Macintosh|iPhone|iPad|iPod/.test(navigator.userAgent);
-
 const pad = n => String(n).padStart(2, '0');
 
-// Generate .ics file content for a single birthday
-function generateICS(name, day, month) {
+// Build a single VEVENT block for a birthday (shared by single + multi .ics)
+function buildVEVENT(name, day, month) {
     const year = new Date().getFullYear();
     const startDate = `${year}${pad(month)}${pad(day)}`;
     const endDateObj = new Date(year, month - 1, day + 1);
@@ -133,10 +130,6 @@ function generateICS(name, day, month) {
     const uid = `birthday-${name.replace(/\s+/g, '-').toLowerCase()}-${month}-${day}@birthday-dashboard`;
 
     return [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Birthday Dashboard//EN',
-        'CALSCALE:GREGORIAN',
         'BEGIN:VEVENT',
         `DTSTART;VALUE=DATE:${startDate}`,
         `DTEND;VALUE=DATE:${endDate}`,
@@ -149,48 +142,34 @@ function generateICS(name, day, month) {
         'ACTION:DISPLAY',
         `DESCRIPTION:🎂 ${name}'s Birthday is today!`,
         'END:VALARM',
-        'END:VEVENT',
-        'END:VCALENDAR'
+        'END:VEVENT'
     ].join('\r\n');
 }
 
-// Generate a combined .ics with multiple events
-function generateMultiICS(people) {
-    const events = people.map(p => {
-        const year = new Date().getFullYear();
-        const startDate = `${year}${pad(p.month)}${pad(p.day)}`;
-        const endDateObj = new Date(year, p.month - 1, p.day + 1);
-        const endDate = `${endDateObj.getFullYear()}${pad(endDateObj.getMonth() + 1)}${pad(endDateObj.getDate())}`;
-        const uid = `birthday-${p.name.replace(/\s+/g, '-').toLowerCase()}-${p.month}-${p.day}@birthday-dashboard`;
-
-        return [
-            'BEGIN:VEVENT',
-            `DTSTART;VALUE=DATE:${startDate}`,
-            `DTEND;VALUE=DATE:${endDate}`,
-            'RRULE:FREQ=YEARLY',
-            `SUMMARY:🎂 ${p.name}'s Birthday`,
-            `DESCRIPTION:Happy Birthday ${p.name}! 🎉`,
-            `UID:${uid}`,
-            'BEGIN:VALARM',
-            'TRIGGER:-PT0M',
-            'ACTION:DISPLAY',
-            `DESCRIPTION:🎂 ${p.name}'s Birthday is today!`,
-            'END:VALARM',
-            'END:VEVENT'
-        ].join('\r\n');
-    });
-
+// Wrap VEVENT(s) in a VCALENDAR envelope
+function wrapICS(...events) {
     return [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
         'PRODID:-//Birthday Dashboard//EN',
         'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
         ...events,
         'END:VCALENDAR'
     ].join('\r\n');
 }
 
-// Download an .ics file
+// Generate .ics file content for a single birthday
+function generateICS(name, day, month) {
+    return wrapICS(buildVEVENT(name, day, month));
+}
+
+// Generate a combined .ics with multiple events
+function generateMultiICS(people) {
+    return wrapICS(...people.map(p => buildVEVENT(p.name, p.day, p.month)));
+}
+
+// Download an .ics file — same path on iOS, Android, and desktop
 function downloadICS(filename, icsContent) {
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -203,31 +182,13 @@ function downloadICS(filename, icsContent) {
     URL.revokeObjectURL(url);
 }
 
-// Generate Google Calendar URL for a birthday
-function getGoogleCalendarUrl(name, day, month) {
-    const year = new Date().getFullYear();
-    const startDate = `${year}${pad(month)}${pad(day)}`;
-    const endDateObj = new Date(year, month - 1, day + 1);
-    const endDate = `${endDateObj.getFullYear()}${pad(endDateObj.getMonth() + 1)}${pad(endDateObj.getDate())}`;
-    
-    const title = encodeURIComponent(`🎂 ${name}'s Birthday`);
-    const details = encodeURIComponent(`Happy Birthday ${name}! 🎉`);
-    const recur = encodeURIComponent('RRULE:FREQ=YEARLY');
-    
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&recur=${recur}`;
-}
-
-// Unified: add a single person to calendar
+// Add a single birthday — .ics works on Apple Calendar, Google Calendar, and others
 function addToCalendar(name, day, month) {
-    if (isAppleDevice) {
-        const ics = generateICS(name, day, month);
-        downloadICS(`${name.replace(/\s+/g, '_')}_birthday.ics`, ics);
-    } else {
-        window.open(getGoogleCalendarUrl(name, day, month), '_blank');
-    }
+    const ics = generateICS(name, day, month);
+    downloadICS(`${name.replace(/\s+/g, '_')}_birthday.ics`, ics);
 }
 
-// Add all birthdays in a month — always use .ics (works everywhere, avoids popup blockers)
+// Add all birthdays in a month — same .ics download on every platform
 function addAllToCalendar(monthBirthdays) {
     const ics = generateMultiICS(monthBirthdays);
     const monthName = monthNames[monthBirthdays[0].month - 1];
@@ -331,7 +292,7 @@ function renderMonths() {
         header.innerHTML = `
             <h3>${monthNames[month - 1]}</h3>
             <div class="month-header-actions">
-                <button class="add-all-btn" data-month="${month}" title="Add all ${monthNames[month - 1]} birthdays to Google Calendar">📅 Add All</button>
+                <button class="add-all-btn" data-month="${month}" title="Add all ${monthNames[month - 1]} birthdays to your calendar">📅 Add All</button>
                 <span class="count">${monthBirthdays.length}</span>
             </div>
         `;
