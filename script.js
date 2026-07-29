@@ -1,4 +1,6 @@
 const birthdays = [
+    // Optional photo: set `photo: "photos/custom.jpg"` or drop photos/{slug}.jpg
+    // e.g. Mukesh → photos/mukesh.jpg, "G Priya" → photos/g-priya.jpg
     { name: "Mukesh", day: 14, month: 1 },
     { name: "Prem", day: 15, month: 1 },
     
@@ -99,6 +101,57 @@ function getOrdinalSuffix(i) {
 // Format date as "Month Day"
 function formatDate(day, month) {
     return `${monthNames[month - 1]} ${getOrdinalSuffix(day)}`;
+}
+
+// Slug for photo filenames: "R.Vinoth" → "r-vinoth", "Rama/Rajee" → "rama-rajeee"
+function photoSlug(name) {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+// Initials from name: "Mukesh" → "M", "G Priya" → "GP", "R.Vinoth" → "RV"
+function getInitials(name) {
+    const cleaned = name.replace(/[./]/g, ' ').trim();
+    const parts = cleaned.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) {
+        const word = parts[0];
+        return word.length >= 2 ? (word[0] + word[1]).toUpperCase() : word[0].toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Stable warm hue from name for initials background
+function avatarHue(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash) % 360;
+}
+
+// Photo src: optional person.photo, else photos/{slug}.jpg
+function getPhotoSrc(person) {
+    if (person.photo) return person.photo;
+    return `photos/${photoSlug(person.name)}.jpg`;
+}
+
+// Avatar markup — photo covers initials when it loads; onerror falls back to initials
+function avatarHTML(person, sizeClass = '') {
+    const initials = getInitials(person.name);
+    const hue = avatarHue(person.name);
+    const src = getPhotoSrc(person);
+    const size = sizeClass ? ` ${sizeClass}` : '';
+    return `
+        <div class="avatar${size}" style="--avatar-hue: ${hue}" aria-hidden="true">
+            <span class="avatar-initials">${initials}</span>
+            <img class="avatar-photo" src="${src}" alt="" loading="lazy"
+                 onerror="this.remove()">
+        </div>
+    `;
 }
 
 // Calculate days until next birthday
@@ -213,8 +266,10 @@ function renderTodayBanner() {
     const names = todayPeople.map(p => `<span class="today-name">${p.name}</span>`).join(', ');
     const label = todayPeople.length === 1 ? 'birthday' : 'birthdays';
 
+    const avatars = todayPeople.map(p => avatarHTML(p, 'avatar-lg')).join('');
+
     banner.innerHTML = `
-        <div class="today-banner-icon">🎂</div>
+        <div class="today-banner-avatars">${avatars}</div>
         <div class="today-banner-content">
             <h3>Today's ${label}!</h3>
             <p>Wish ${names} a happy birthday — ${formatDate(todayPeople[0].day, todayPeople[0].month)}</p>
@@ -251,8 +306,13 @@ function renderUpcoming() {
         
         card.innerHTML = `
             <div class="date-badge${isToday ? ' badge-today' : ''}">${badgeText}</div>
-            <h3>${person.name}</h3>
-            <p>${formatDate(person.day, person.month)}</p>
+            <div class="upcoming-person">
+                ${avatarHTML(person, 'avatar-lg')}
+                <div class="upcoming-person-text">
+                    <h3>${person.name}</h3>
+                    <p>${formatDate(person.day, person.month)}</p>
+                </div>
+            </div>
         `;
         
         container.appendChild(card);
@@ -315,7 +375,10 @@ function renderMonths() {
             li.className = `birthday-item${isToday ? ' birthday-today' : ''}`;
             
             li.innerHTML = `
-                <span class="name">${isToday ? '🎂 ' : ''}${person.name}</span>
+                <span class="birthday-person">
+                    ${avatarHTML(person, 'avatar-sm')}
+                    <span class="name">${isToday ? '🎂 ' : ''}${person.name}</span>
+                </span>
                 <span class="item-actions">
                     <button class="cal-btn" title="Add ${person.name}'s birthday to calendar">📅</button>
                     <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : ''}</span>
