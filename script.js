@@ -319,82 +319,149 @@ function renderUpcoming() {
     });
 }
 
-// Render All Months
-function renderMonths() {
-    const container = document.getElementById('months-grid');
-    
-    // Group by month
-    const grouped = {};
-    for (let i = 1; i <= 12; i++) {
-        grouped[i] = [];
-    }
-    
-    birthdays.forEach(person => {
-        grouped[person.month].push(person);
-    });
-    
-    // Create cards for each month
-    for (let month = 1; month <= 12; month++) {
-        const monthBirthdays = grouped[month];
-        
-        // Skip months with no birthdays just in case, although here all have them
-        if (monthBirthdays.length === 0) continue;
-        
-        // Sort by day inside month
-        monthBirthdays.sort((a, b) => a.day - b.day);
-        
-        const card = document.createElement('div');
-        card.className = 'glass-card month-card fade-in-up';
-        card.style.animationDelay = `${month * 0.05}s`;
-        
-        const header = document.createElement('div');
-        header.className = 'month-header';
-        header.innerHTML = `
+// Months in wheel order: current month first, then wrap (Aug → … → Jul)
+function getMonthOrder() {
+    const current = new Date().getMonth() + 1; // 1–12
+    return Array.from({ length: 12 }, (_, i) => ((current - 1 + i) % 12) + 1);
+}
+
+function renderMonthPanel(month, grouped) {
+    const panel = document.getElementById('month-panel');
+    const monthBirthdays = [...(grouped[month] || [])].sort((a, b) => a.day - b.day);
+    const isCurrentMonth = month === new Date().getMonth() + 1;
+
+    panel.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = `glass-card month-card${isCurrentMonth ? ' month-card-current' : ''}`;
+
+    const header = document.createElement('div');
+    header.className = 'month-header';
+    header.innerHTML = `
+        <div class="month-title-group">
             <h3>${monthNames[month - 1]}</h3>
-            <div class="month-header-actions">
-                <button class="add-all-btn" data-month="${month}" title="Add all ${monthNames[month - 1]} birthdays to your calendar">📅 Add All</button>
-                <span class="count">${monthBirthdays.length}</span>
-            </div>
-        `;
-        // Bind the "Add All" button
-        header.querySelector('.add-all-btn').addEventListener('click', () => {
-            addAllToCalendar(monthBirthdays);
-        });
-        card.appendChild(header);
-        
-        const list = document.createElement('ul');
-        list.className = 'birthday-list';
-        
-        monthBirthdays.forEach(person => {
-            const li = document.createElement('li');
-            
-            // Check if it's today
-            const today = new Date();
-            const isToday = today.getDate() === person.day && (today.getMonth() + 1) === person.month;
-            
-            li.className = `birthday-item${isToday ? ' birthday-today' : ''}`;
-            
-            li.innerHTML = `
-                <span class="birthday-person">
-                    ${avatarHTML(person, 'avatar-sm')}
-                    <span class="name">${isToday ? '🎂 ' : ''}${person.name}</span>
-                </span>
-                <span class="item-actions">
-                    <button class="cal-btn" title="Add ${person.name}'s birthday to calendar">📅</button>
-                    <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : ''}</span>
-                </span>
-            `;
-            li.querySelector('.cal-btn').addEventListener('click', (e) => {
-                e.preventDefault();
-                addToCalendar(person.name, person.day, person.month);
-            });
-            
-            list.appendChild(li);
-        });
-        
-        card.appendChild(list);
-        container.appendChild(card);
+            ${isCurrentMonth ? '<span class="month-now-badge">This month</span>' : ''}
+        </div>
+        <div class="month-header-actions">
+            <button class="add-all-btn" title="Add all ${monthNames[month - 1]} birthdays to your calendar">📅 Add All</button>
+            <span class="count">${monthBirthdays.length}</span>
+        </div>
+    `;
+    header.querySelector('.add-all-btn').addEventListener('click', () => {
+        addAllToCalendar(monthBirthdays);
+    });
+    card.appendChild(header);
+
+    if (monthBirthdays.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'month-empty';
+        empty.textContent = 'No birthdays this month';
+        card.appendChild(empty);
+        panel.appendChild(card);
+        return;
     }
+
+    const list = document.createElement('ul');
+    list.className = 'birthday-list';
+
+    monthBirthdays.forEach(person => {
+        const li = document.createElement('li');
+        const today = new Date();
+        const isToday = today.getDate() === person.day && (today.getMonth() + 1) === person.month;
+
+        li.className = `birthday-item${isToday ? ' birthday-today' : ''}`;
+        li.innerHTML = `
+            <span class="birthday-person">
+                ${avatarHTML(person, 'avatar-sm')}
+                <span class="name">${isToday ? '🎂 ' : ''}${person.name}</span>
+            </span>
+            <span class="item-actions">
+                <button class="cal-btn" title="Add ${person.name}'s birthday to calendar">📅</button>
+                <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : ''}</span>
+            </span>
+        `;
+        li.querySelector('.cal-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            addToCalendar(person.name, person.day, person.month);
+        });
+        list.appendChild(li);
+    });
+
+    card.appendChild(list);
+    panel.appendChild(card);
+}
+
+function selectMonth(month, grouped, scrollIntoView = false) {
+    const wheel = document.getElementById('month-wheel');
+    wheel.querySelectorAll('.month-wheel-item').forEach(btn => {
+        const active = Number(btn.dataset.month) === month;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        if (active && scrollIntoView) {
+            btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    });
+    renderMonthPanel(month, grouped);
+}
+
+// iOS-style month wheel — current month first, snap-scroll to pick a month
+function renderMonths() {
+    const wheel = document.getElementById('month-wheel');
+    wheel.innerHTML = '';
+
+    const grouped = {};
+    for (let i = 1; i <= 12; i++) grouped[i] = [];
+    birthdays.forEach(person => grouped[person.month].push(person));
+
+    const order = getMonthOrder();
+    const currentMonth = order[0];
+
+    order.forEach(month => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'month-wheel-item';
+        btn.dataset.month = String(month);
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', 'false');
+        btn.innerHTML = `
+            <span class="month-wheel-name">${monthNames[month - 1]}</span>
+            <span class="month-wheel-count">${grouped[month].length}</span>
+        `;
+        btn.addEventListener('click', () => selectMonth(month, grouped, true));
+        wheel.appendChild(btn);
+    });
+
+    // Snap selection while scrolling the wheel
+    let scrollTimer;
+    wheel.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const center = wheel.scrollLeft + wheel.clientWidth / 2;
+            let closest = null;
+            let closestDist = Infinity;
+            wheel.querySelectorAll('.month-wheel-item').forEach(btn => {
+                const mid = btn.offsetLeft + btn.offsetWidth / 2;
+                const dist = Math.abs(mid - center);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closest = btn;
+                }
+            });
+            if (closest) {
+                selectMonth(Number(closest.dataset.month), grouped, false);
+            }
+        }, 80);
+    }, { passive: true });
+
+    selectMonth(currentMonth, grouped, false);
+
+    // Center current month after layout
+    requestAnimationFrame(() => {
+        const active = wheel.querySelector('.month-wheel-item.is-active');
+        if (active) {
+            active.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+        }
+    });
 }
 
 // Initialize

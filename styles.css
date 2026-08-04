@@ -273,17 +273,86 @@ section h2 {
     white-space: nowrap;
 }
 
-/* Month Grid */
-.months-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
+/* iOS-style month wheel + selected month panel */
+.month-wheel {
+    display: flex;
+    gap: 0.65rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0.35rem 12% 1.25rem;
+    margin: 0 -0.25rem 0.5rem;
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.month-wheel::-webkit-scrollbar {
+    display: none;
+}
+
+.month-wheel-item {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    min-width: 5.5rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    opacity: 0.55;
+}
+
+.month-wheel-item:hover {
+    opacity: 0.85;
+    border-color: var(--border-hover);
+}
+
+.month-wheel-item.is-active {
+    opacity: 1;
+    transform: scale(1.06);
+    color: var(--text-primary);
+    background: linear-gradient(135deg, rgba(200, 149, 108, 0.16), var(--bg-surface));
+    border-color: rgba(200, 149, 108, 0.35);
+    box-shadow: var(--shadow-card);
+}
+
+.month-wheel-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.month-wheel-count {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+}
+
+.month-wheel-item.is-active .month-wheel-count {
+    color: var(--accent-warm);
+}
+
+.month-panel {
+    min-height: 12rem;
 }
 
 .month-card {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    animation: fade-in-up 0.35s ease-out;
+}
+
+.month-card-current {
+    border-color: rgba(200, 149, 108, 0.22);
 }
 
 .month-header {
@@ -293,6 +362,14 @@ section h2 {
     border-bottom: 1px solid var(--border-subtle);
     padding-bottom: 0.75rem;
     margin-bottom: 0.25rem;
+    gap: 1rem;
+}
+
+.month-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
 }
 
 .month-header h3 {
@@ -302,6 +379,18 @@ section h2 {
     letter-spacing: -0.01em;
 }
 
+.month-now-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-warm);
+    background: var(--accent-warm-muted);
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
 .month-header .count {
     background: var(--accent-warm-muted);
     padding: 0.15rem 0.55rem;
@@ -309,6 +398,13 @@ section h2 {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--accent-warm);
+}
+
+.month-empty {
+    color: var(--text-tertiary);
+    font-size: 0.95rem;
+    font-weight: 300;
+    padding: 0.5rem 0.25rem;
 }
 
 /* Birthday List Items */
@@ -523,6 +619,8 @@ section h2 {
     .gradient-blob { animation: none; }
     .fade-in-up { animation: none; opacity: 1; }
     header { animation: none; }
+    .month-card { animation: none; }
+    .month-wheel-item { transition: none; }
 }
 
 /* Footer */
@@ -546,7 +644,8 @@ footer {
     .app-container { padding: 3rem 1.25rem 2rem; gap: 3rem; }
     header h1 { font-size: 2rem; }
     section h2 { font-size: 1.1rem; }
-    .months-grid { grid-template-columns: 1fr; }
+    .month-wheel { padding: 0.25rem 18% 1rem; }
+    .month-wheel-item { min-width: 4.75rem; padding: 0.75rem 0.85rem; }
     .upcoming-grid { grid-template-columns: 1fr; }
     .upcoming-person { padding-right: 5rem; }
     .today-banner { padding: 1.25rem 1.25rem; gap: 1rem; }
