@@ -21,9 +21,22 @@
         <header>
             <h1>Birthday Celebrations</h1>
             <p>Tracking the special days of our amazing team</p>
+            <div class="header-stats" id="header-stats" aria-live="polite"></div>
+            <div class="header-toolbar">
+                <label class="search-wrap">
+                    <span class="visually-hidden">Search people</span>
+                    <input type="search" id="birthday-search" placeholder="Search names…" autocomplete="off">
+                </label>
+                <button type="button" class="toolbar-btn" id="add-year-cal" title="Download every birthday as a calendar file">📅 Add year</button>
+            </div>
         </header>
 
         <main>
+            <section class="search-section hidden" id="search-section">
+                <h2>Search results</h2>
+                <ul class="search-results birthday-list" id="search-results"></ul>
+            </section>
+
             <section class="upcoming-section" id="upcoming-section">
                 <h2>🎉 Upcoming Birthdays</h2>
                 <div class="upcoming-grid" id="upcoming-grid">
