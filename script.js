@@ -1,5 +1,9 @@
 const birthdays = [
-    // Optional photo: set `photo: "photos/custom.jpg"` or drop photos/{slug}.jpg
+    // Optional fields per person:
+    //   year: 1990           → shows age / "turning N"
+    //   nickname: "Mo"       → shown beside the name
+    //   note: "Team lead"    → small subtitle
+    //   photo: "photos/x.jpg" or drop photos/{slug}.jpg
     // e.g. Mukesh → photos/mukesh.jpg, "G Priya" → photos/g-priya.jpg
     { name: "Mukesh", day: 14, month: 1 },
     { name: "Prem", day: 15, month: 1 },
@@ -103,6 +107,59 @@ function formatDate(day, month) {
     return `${monthNames[month - 1]} ${getOrdinalSuffix(day)}`;
 }
 
+function displayName(person) {
+    return person.nickname ? `${person.name} (${person.nickname})` : person.name;
+}
+
+function getTurningAge(person) {
+    if (!person.year) return null;
+    const today = new Date();
+    const thisYearAge = today.getFullYear() - person.year;
+    const alreadyPassed =
+        today.getMonth() + 1 > person.month ||
+        (today.getMonth() + 1 === person.month && today.getDate() > person.day);
+    return alreadyPassed ? thisYearAge + 1 : thisYearAge;
+}
+
+function getZodiac(day, month) {
+    const signs = [
+        { name: 'Capricorn', m: 1, d: 19 },
+        { name: 'Aquarius', m: 2, d: 18 },
+        { name: 'Pisces', m: 3, d: 20 },
+        { name: 'Aries', m: 4, d: 19 },
+        { name: 'Taurus', m: 5, d: 20 },
+        { name: 'Gemini', m: 6, d: 20 },
+        { name: 'Cancer', m: 7, d: 22 },
+        { name: 'Leo', m: 8, d: 22 },
+        { name: 'Virgo', m: 9, d: 22 },
+        { name: 'Libra', m: 10, d: 22 },
+        { name: 'Scorpio', m: 11, d: 21 },
+        { name: 'Sagittarius', m: 12, d: 21 },
+        { name: 'Capricorn', m: 12, d: 31 }
+    ];
+    return signs.find(s => month < s.m || (month === s.m && day <= s.d)).name;
+}
+
+function personMeta(person, { includeDaysUntil = false } = {}) {
+    const parts = [formatDate(person.day, person.month)];
+    const age = getTurningAge(person);
+    if (age != null) parts.push(`turning ${age}`);
+    parts.push(getZodiac(person.day, person.month));
+    if (person.note) parts.push(person.note);
+    if (includeDaysUntil) {
+        const days = getDaysUntilNext(person.day, person.month);
+        if (days === 0) parts.push('Today');
+        else if (days === 1) parts.push('Tomorrow');
+        else if (days <= 7) parts.push(`in ${days} days`);
+    }
+    return parts.join(' · ');
+}
+
+function birthdayGreeting(person) {
+    const nick = person.nickname || person.name;
+    return `Happy Birthday ${nick}! 🎂🎉`;
+}
+
 // Slug for photo filenames: "R.Vinoth" → "r-vinoth", "Rama/Rajee" → "rama-rajeee"
 function photoSlug(name) {
     return name
@@ -175,20 +232,27 @@ function getDaysUntilNext(day, month) {
 const pad = n => String(n).padStart(2, '0');
 
 // Build a single VEVENT block for a birthday (shared by single + multi .ics)
-function buildVEVENT(name, day, month) {
+function buildVEVENT(person) {
+    const name = person.name;
+    const day = person.day;
+    const month = person.month;
     const year = new Date().getFullYear();
     const startDate = `${year}${pad(month)}${pad(day)}`;
     const endDateObj = new Date(year, month - 1, day + 1);
     const endDate = `${endDateObj.getFullYear()}${pad(endDateObj.getMonth() + 1)}${pad(endDateObj.getDate())}`;
     const uid = `birthday-${name.replace(/\s+/g, '-').toLowerCase()}-${month}-${day}@birthday-dashboard`;
+    const age = getTurningAge(person);
+    const descBits = [`Happy Birthday ${displayName(person)}! 🎉`, getZodiac(day, month)];
+    if (age != null) descBits.push(`Turning ${age}`);
+    if (person.note) descBits.push(person.note);
 
     return [
         'BEGIN:VEVENT',
         `DTSTART;VALUE=DATE:${startDate}`,
         `DTEND;VALUE=DATE:${endDate}`,
         'RRULE:FREQ=YEARLY',
-        `SUMMARY:🎂 ${name}'s Birthday`,
-        `DESCRIPTION:Happy Birthday ${name}! 🎉`,
+        `SUMMARY:🎂 ${displayName(person)}'s Birthday`,
+        `DESCRIPTION:${descBits.join(' — ')}`,
         `UID:${uid}`,
         'BEGIN:VALARM',
         'TRIGGER:-PT0M',
@@ -213,13 +277,13 @@ function wrapICS(...events) {
 }
 
 // Generate .ics file content for a single birthday
-function generateICS(name, day, month) {
-    return wrapICS(buildVEVENT(name, day, month));
+function generateICS(person) {
+    return wrapICS(buildVEVENT(person));
 }
 
 // Generate a combined .ics with multiple events
 function generateMultiICS(people) {
-    return wrapICS(...people.map(p => buildVEVENT(p.name, p.day, p.month)));
+    return wrapICS(...people.map(p => buildVEVENT(p)));
 }
 
 // Download an .ics file — same path on iOS, Android, and desktop
@@ -236,9 +300,9 @@ function downloadICS(filename, icsContent) {
 }
 
 // Add a single birthday — .ics works on Apple Calendar, Google Calendar, and others
-function addToCalendar(name, day, month) {
-    const ics = generateICS(name, day, month);
-    downloadICS(`${name.replace(/\s+/g, '_')}_birthday.ics`, ics);
+function addToCalendar(person) {
+    const ics = generateICS(person);
+    downloadICS(`${person.name.replace(/\s+/g, '_')}_birthday.ics`, ics);
 }
 
 // Add all birthdays in a month — same .ics download on every platform
@@ -263,20 +327,33 @@ function renderTodayBanner() {
     const banner = document.createElement('div');
     banner.className = 'today-banner fade-in-up';
 
-    const names = todayPeople.map(p => `<span class="today-name">${p.name}</span>`).join(', ');
+    const names = todayPeople.map(p => `<span class="today-name">${displayName(p)}</span>`).join(', ');
     const label = todayPeople.length === 1 ? 'birthday' : 'birthdays';
 
     const avatars = todayPeople.map(p => avatarHTML(p, 'avatar-lg')).join('');
+    const wishText = todayPeople.map(p => birthdayGreeting(p)).join('\n');
 
     banner.innerHTML = `
         <div class="today-banner-avatars">${avatars}</div>
         <div class="today-banner-content">
             <h3>Today's ${label}!</h3>
             <p>Wish ${names} a happy birthday — ${formatDate(todayPeople[0].day, todayPeople[0].month)}</p>
+            <button type="button" class="toolbar-btn copy-wish-btn">Copy wish</button>
         </div>
     `;
+    banner.querySelector('.copy-wish-btn').addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(wishText);
+            const btn = banner.querySelector('.copy-wish-btn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = 'Copy wish'; }, 1600);
+        } catch (_) {
+            banner.querySelector('.copy-wish-btn').textContent = 'Copy failed';
+        }
+    });
 
     section.insertBefore(banner, section.firstChild.nextSibling);
+    launchConfetti();
 }
 
 // Render Upcoming Birthdays
@@ -303,14 +380,20 @@ function renderUpcoming() {
         card.style.animationDelay = `${index * 0.15}s`;
         
         let badgeText = isToday ? '🎂 TODAY' : (person.daysUntil === 1 ? 'Tomorrow' : `In ${person.daysUntil} days`);
+        const age = getTurningAge(person);
+        const subtitle = [
+            formatDate(person.day, person.month),
+            age != null ? `turning ${age}` : null,
+            getZodiac(person.day, person.month)
+        ].filter(Boolean).join(' · ');
         
         card.innerHTML = `
             <div class="date-badge${isToday ? ' badge-today' : ''}">${badgeText}</div>
             <div class="upcoming-person">
                 ${avatarHTML(person, 'avatar-lg')}
                 <div class="upcoming-person-text">
-                    <h3>${person.name}</h3>
-                    <p>${formatDate(person.day, person.month)}</p>
+                    <h3>${displayName(person)}</h3>
+                    <p>${subtitle}</p>
                 </div>
             </div>
         `;
@@ -368,21 +451,25 @@ function renderMonthPanel(month, grouped) {
         const li = document.createElement('li');
         const today = new Date();
         const isToday = today.getDate() === person.day && (today.getMonth() + 1) === person.month;
+        const daysUntil = getDaysUntilNext(person.day, person.month);
 
-        li.className = `birthday-item${isToday ? ' birthday-today' : ''}`;
+        li.className = `birthday-item${isToday ? ' birthday-today' : ''}${daysUntil > 0 && daysUntil <= 7 ? ' birthday-soon' : ''}`;
         li.innerHTML = `
             <span class="birthday-person">
                 ${avatarHTML(person, 'avatar-sm')}
-                <span class="name">${isToday ? '🎂 ' : ''}${person.name}</span>
+                <span class="person-text">
+                    <span class="name">${isToday ? '🎂 ' : ''}${displayName(person)}</span>
+                    ${person.note ? `<span class="person-note">${person.note}</span>` : ''}
+                </span>
             </span>
             <span class="item-actions">
                 <button class="cal-btn" title="Add ${person.name}'s birthday to calendar">📅</button>
-                <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : ''}</span>
+                <span class="date">${getOrdinalSuffix(person.day)}${isToday ? ' — Today!' : daysUntil === 1 ? ' — Tomorrow' : daysUntil <= 7 ? ` — in ${daysUntil}d` : ''}</span>
             </span>
         `;
         li.querySelector('.cal-btn').addEventListener('click', (e) => {
             e.preventDefault();
-            addToCalendar(person.name, person.day, person.month);
+            addToCalendar(person);
         });
         list.appendChild(li);
     });
@@ -464,9 +551,126 @@ function renderMonths() {
     });
 }
 
+function renderStats() {
+    const el = document.getElementById('header-stats');
+    const now = new Date();
+    const thisMonth = birthdays.filter(b => b.month === now.getMonth() + 1).length;
+    const ranked = birthdays
+        .map(b => ({ ...b, daysUntil: getDaysUntilNext(b.day, b.month) }))
+        .sort((a, b) => a.daysUntil - b.daysUntil);
+    const next = ranked[0];
+    const nextLabel = !next
+        ? 'No upcoming birthdays'
+        : next.daysUntil === 0
+            ? `${next.name} today`
+            : next.daysUntil === 1
+                ? `${next.name} tomorrow`
+                : `${next.name} in ${next.daysUntil} days`;
+    el.innerHTML = `
+        <span>${birthdays.length} people</span>
+        <span>${thisMonth} this month</span>
+        <span>Next: ${nextLabel}</span>
+    `;
+}
+
+function matchesQuery(person, query) {
+    const hay = [person.name, person.nickname, person.note, monthNames[person.month - 1], getZodiac(person.day, person.month)]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    return hay.includes(query);
+}
+
+function renderSearch(query) {
+    const section = document.getElementById('search-section');
+    const list = document.getElementById('search-results');
+    const upcoming = document.getElementById('upcoming-section');
+    const calendar = document.querySelector('.all-months-section');
+    const q = query.trim().toLowerCase();
+
+    if (!q) {
+        section.classList.add('hidden');
+        upcoming.classList.remove('hidden');
+        calendar.classList.remove('hidden');
+        list.innerHTML = '';
+        return;
+    }
+
+    upcoming.classList.add('hidden');
+    calendar.classList.add('hidden');
+    section.classList.remove('hidden');
+
+    const hits = birthdays
+        .filter(p => matchesQuery(p, q))
+        .sort((a, b) => getDaysUntilNext(a.day, a.month) - getDaysUntilNext(b.day, b.month));
+
+    list.innerHTML = '';
+    if (hits.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'month-empty';
+        empty.textContent = `No matches for “${query.trim()}”`;
+        list.appendChild(empty);
+        return;
+    }
+
+    hits.forEach(person => {
+        const li = document.createElement('li');
+        const daysUntil = getDaysUntilNext(person.day, person.month);
+        const isToday = daysUntil === 0;
+        li.className = `birthday-item${isToday ? ' birthday-today' : ''}`;
+        li.innerHTML = `
+            <span class="birthday-person">
+                ${avatarHTML(person, 'avatar-sm')}
+                <span class="person-text">
+                    <span class="name">${isToday ? '🎂 ' : ''}${displayName(person)}</span>
+                    <span class="person-note">${personMeta(person, { includeDaysUntil: true })}</span>
+                </span>
+            </span>
+            <span class="item-actions">
+                <button class="cal-btn" title="Add ${person.name}'s birthday to calendar">📅</button>
+            </span>
+        `;
+        li.querySelector('.cal-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            addToCalendar(person);
+        });
+        list.appendChild(li);
+    });
+}
+
+function launchConfetti() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const root = document.createElement('div');
+    root.className = 'confetti-root';
+    root.setAttribute('aria-hidden', 'true');
+    const colors = ['#c8956c', '#bfa67a', '#b87878', '#eaeaef', '#d4a574'];
+    for (let i = 0; i < 36; i++) {
+        const piece = document.createElement('span');
+        piece.className = 'confetti-piece';
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.background = colors[i % colors.length];
+        piece.style.animationDelay = `${Math.random() * 0.6}s`;
+        piece.style.animationDuration = `${1.8 + Math.random()}s`;
+        root.appendChild(piece);
+    }
+    document.body.appendChild(root);
+    setTimeout(() => root.remove(), 3200);
+}
+
+function bindToolbar() {
+    document.getElementById('add-year-cal').addEventListener('click', () => {
+        downloadICS('all_birthdays.ics', generateMultiICS(birthdays));
+    });
+    document.getElementById('birthday-search').addEventListener('input', (e) => {
+        renderSearch(e.target.value);
+    });
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    renderStats();
     renderTodayBanner();
     renderUpcoming();
     renderMonths();
+    bindToolbar();
 });
