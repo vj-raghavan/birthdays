@@ -55,6 +55,7 @@ const birthdays = [
     { name: "Rama/Rajee", day: 10, month: 9 },
     { name: "Nandini", day: 14, month: 9 },
     { name: "Anand", day: 15, month: 9 },
+    { name: "Ishrath Abrar", day: 27, month: 9 },
     
     { name: "Saravana/Kumar", day: 1, month: 10 },
     { name: "Dhana", day: 15, month: 10 },
